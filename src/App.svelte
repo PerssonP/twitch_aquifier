@@ -1,6 +1,5 @@
 <script lang="ts">
   import Player from './lib/Player.svelte';
-  import Counter from './lib/Counter.svelte';
 
   import type { User, FollowFrom, Clip } from './twitchAPITypes';
 
@@ -58,15 +57,14 @@
 <main>
   {#if !videos}
     <form on:submit|preventDefault={handleSubmit}>
-      <div class="flex items-baseline">
+      <div>
         <p>Enter twitch login:</p>
         <input bind:value={userLogin} />
         <button type="submit">Submit</button>
       </div>
     </form>
-    <p class="text-red-600">{error ?? ''}</p>
+    <p style="color: rgb(220 38 38);">{error ?? ''}</p>
   {:else}
     <Player videos={videos} />
-    <Counter />
   {/if}
 </main>

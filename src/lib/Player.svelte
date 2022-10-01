@@ -22,7 +22,9 @@
   };
 </script>
 
-<!-- svelte-ignore a11y-media-has-caption -->
-<video bind:this={vidPlayer} playsinline src="" controls id="temp" />
+<div style="display: flex; justify-content: center; margin: 0 2rem">
+  <!-- svelte-ignore a11y-media-has-caption -->
+  <video bind:this={vidPlayer} playsinline src="" controls id="temp" />
+</div>
 
 <button on:click={nextVid}>Next</button>
