@@ -58,8 +58,11 @@
 <main>
   {#if !videos}
     <form on:submit|preventDefault={handleSubmit}>
-      <input bind:value={userLogin} />
-      <button type="submit">Submit</button>
+      <div class="flex items-baseline">
+        <p>Enter twitch login:</p>
+        <input bind:value={userLogin} />
+        <button type="submit">Submit</button>
+      </div>
     </form>
     <p class="text-red-600">{error ?? ''}</p>
   {:else}
