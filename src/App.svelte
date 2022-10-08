@@ -65,6 +65,6 @@
     </form>
     <p style="color: rgb(220 38 38);">{error ?? ''}</p>
   {:else}
-    <Player videos={videos} />
+    <Player {videos} />
   {/if}
 </main>
