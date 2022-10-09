@@ -40,7 +40,14 @@
       cnt++;
     }
   };
+
+  const prevVid = () => {
+    // TODO
+  }
 </script>
+
+
+<button class="prevVid" on:click={prevVid} disabled={loadingNextVid}>Prev</button>
 
 <div style="display: flex; justify-content: center; margin: 0 2rem">
   <!-- svelte-ignore a11y-media-has-caption -->
@@ -49,10 +56,30 @@
   <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
 </div>
 
-<button on:click={nextVid} disabled={loadingNextVid}>Next</button>
+<button class="nextVid" on:click={nextVid} disabled={loadingNextVid}>Next</button>
 
 <style>
   .hidden {
     display: none;
   }
+
+  video {
+    width: 80vw;
+    max-height: 100vh;
+  }
+
+  .nextVid {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+  }
+
+  .prevVid {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+  }
+
 </style>
