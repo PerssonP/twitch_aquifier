@@ -13,6 +13,8 @@
   let cnt = 2;
   let end = videos.length;
 
+  let player1Hidden = false;
+
   onMount(async () => {
     player1.play();
     player1.oncanplay = (_) => (loadingNextVid = false);
@@ -25,10 +27,9 @@
       console.log(clip);
       const newURL = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
 
-      player1.classList.toggle('hidden');
-      player2.classList.toggle('hidden');
+      player1Hidden = !player1Hidden;
       loadingNextVid = true;
-      if (player1.classList.contains('hidden')) {
+      if (player1Hidden) {
         player2.play();
         player1Src = newURL;
       } else {
@@ -43,9 +44,9 @@
 
 <div style="display: flex; justify-content: center; margin: 0 2rem">
   <!-- svelte-ignore a11y-media-has-caption -->
-  <video bind:this={player1} src={player1Src} preload="auto" controls id="player1" />
+  <video bind:this={player1} class:hidden={player1Hidden} src={player1Src} preload="auto" controls id="player1" />
   <!-- svelte-ignore a11y-media-has-caption -->
-  <video class="hidden" bind:this={player2} src={player2Src} preload="auto" controls id="player2" />
+  <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
 </div>
 
 <button on:click={nextVid} disabled={loadingNextVid}>Next</button>
