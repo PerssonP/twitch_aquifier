@@ -10,8 +10,8 @@
   let player2Src = `${videos[1].thumbnail_url.slice(0, videos[1].thumbnail_url.indexOf('-preview'))}.mp4`;
 
   let loadingNextVid = true;
-  let cnt = 2;
-  let end = videos.length;
+  let videoIndex = 0;
+  let end = videos.length - 1;
 
   let player1Hidden = false;
 
@@ -22,64 +22,139 @@
   });
 
   const nextVid = () => {
-    if (cnt < end) {
-      const clip = videos[cnt];
-      console.log(clip);
+    const nextIndex = videoIndex + 2;
+    if (nextIndex <= end) {
+      const clip = videos[nextIndex];
       const newURL = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
 
       player1Hidden = !player1Hidden;
       loadingNextVid = true;
       if (player1Hidden) {
+        player1.pause();
         player2.play();
         player1Src = newURL;
       } else {
+        player2.pause();
         player1.play();
         player2Src = newURL;
       }
 
-      cnt++;
+      videoIndex++;
     }
   };
 
-  const prevVid = () => {
-    // TODO
-  }
+  const hopToVid = (index: number) => {
+    const preloadingPlayer = player1Hidden ? player1 : player2;
+    const clip = videos[index];
+    console.log(clip);
+    loadingNextVid = true;
+    videoIndex = index;
+    preloadingPlayer.src = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
+    preloadingPlayer.addEventListener(
+      'canplay',
+      () => {
+        player1Hidden = !player1Hidden;
+        const nextIndex = videoIndex + 1;
+        if (nextIndex <= end) {
+          const preloadClip = videos[nextIndex];
+          console.log(videoIndex, end);
+          const newURL = `${preloadClip.thumbnail_url.slice(0, preloadClip.thumbnail_url.indexOf('-preview'))}.mp4`;
+          if (player1Hidden) {
+            player1.pause();
+            player2.play();
+            player1Src = newURL;
+          } else {
+            player2.pause();
+            player1.play();
+            player2Src = newURL;
+          }
+        } else {
+          if (player1Hidden) {
+            player1.pause();
+            player2.play();
+          } else {
+            player2.pause();
+            player1.play();
+          }
+        }
+      },
+      { once: true }
+    );
+  };
 </script>
 
+<div class="container">
+  <ul class="clipsList">
+    {#each videos as video, i}
+      <li>
+        <button disabled={loadingNextVid} class="{videoIndex === i ? 'current' : ''}" on:click={() => hopToVid(i)}>
+          <p>{video.title}</p>
+          <p class="broadcasterName">{video.broadcaster_name}</p>
+        </button>
+      </li>
+    {/each}
+  </ul>
 
-<button class="prevVid" on:click={prevVid} disabled={loadingNextVid}>Prev</button>
+  <div class="videoPlayer">
+    <!-- svelte-ignore a11y-media-has-caption -->
+    <video bind:this={player1} class:hidden={player1Hidden} src={player1Src} preload="auto" controls id="player1" />
+    <!-- svelte-ignore a11y-media-has-caption -->
+    <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
+  </div>
 
-<div style="display: flex; justify-content: center; margin: 0 2rem">
-  <!-- svelte-ignore a11y-media-has-caption -->
-  <video bind:this={player1} class:hidden={player1Hidden} src={player1Src} preload="auto" controls id="player1" />
-  <!-- svelte-ignore a11y-media-has-caption -->
-  <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
+  <button class="nextVid" on:click={nextVid} disabled={loadingNextVid || videoIndex >= end}>Next</button>
 </div>
 
-<button class="nextVid" on:click={nextVid} disabled={loadingNextVid}>Next</button>
-
 <style>
-  .hidden {
-    display: none;
+  .container {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: 10% auto 10%;
   }
 
-  video {
-    width: 80vw;
-    max-height: 100vh;
+  .clipsList {
+    list-style-type: none;
+    margin-block: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  .clipsList li button {
+    width: 100%;
+  }
+
+  .clipsList li button.current {
+    background-color: darkgreen;
+  }
+
+  .clipsList p {
+    display: block;
+    margin-block: 0;
+    margin-inline: 0;
+  }
+
+  .broadcasterName {
+    font-size: 0.75em;
+    color: gray;
+  }
+
+  .videoPlayer {
+    place-self: center;
+  }
+
+  .videoPlayer video {
+    height: 90vh;
+    max-width: 100%;
   }
 
   .nextVid {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
+    justify-self: end;
   }
 
-  .prevVid {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
+  .hidden {
+    display: none;
   }
-
 </style>

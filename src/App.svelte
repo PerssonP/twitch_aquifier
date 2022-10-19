@@ -54,17 +54,19 @@
   }
 </script>
 
-<main>
-  {#if !videos}
-    <form on:submit|preventDefault={handleSubmit}>
-      <div>
-        <p>Enter twitch login:</p>
-        <input bind:value={userLogin} />
-        <button type="submit">Submit</button>
-      </div>
-    </form>
-    <p style="color: rgb(220 38 38);">{error ?? ''}</p>
-  {:else}
-    <Player {videos} />
-  {/if}
-</main>
+{#if !videos}
+  <form class="userForm" on:submit|preventDefault={handleSubmit}>
+    <p>Enter twitch login:</p>
+    <input bind:value={userLogin} />
+    <button type="submit">Submit</button>
+  </form>
+  <p style="color: rgb(220 38 38);">{error ?? ''}</p>
+{:else}
+  <Player {videos} />
+{/if}
+
+<style>
+  .userForm {
+    text-align: center;
+  }
+</style>
