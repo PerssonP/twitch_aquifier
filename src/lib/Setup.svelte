@@ -1,7 +1,6 @@
 <script lang="ts">
-  import type { User, FollowFrom, Clip } from '../twitchAPITypes';
+  import type { UserResponse, FollowResponse, ClipResponse, Clip } from '../twitchAPITypes';
   export let videos: Clip[];
-
 
   type optionsType = {
     sortOrder: 'viewsTotal' | 'viewPerChannel' | 'popularity';
@@ -18,12 +17,16 @@
 
   async function handleSubmit() {
     try {
-      const userResult = await callAPI<User[]>(`https://api.twitch.tv/helix/users?login=${userLogin}`);
+      if (!userLogin) {
+        error = 'Please enter your username on Twitch';
+        return;
+      }
 
-      if (userResult.length > 0) {
-        const clips = await getClipsPerFollow(userResult[0].id);
-        videos = sortClips(clips);
-        console.log(videos);
+      const userResult = await callAPI<UserResponse>(`https://api.twitch.tv/helix/users?login=${userLogin}`);
+
+      if (userResult.data.length > 0) {
+        const clipsPerFollow = await getClipsPerFollow(userResult.data[0].id);
+        videos = await sortClips(clipsPerFollow);
       } else {
         error = `No user found with login ${userLogin}`;
       }
@@ -33,40 +36,60 @@
   }
 
   async function getClipsPerFollow(userid: string): Promise<Clip[][]> {
-    const follows = await callAPI<FollowFrom[]>(`https://api.twitch.tv/helix/users/follows?from_id=${userid}`);
+    const follows = (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/users/follows?from_id=${userid}`)).data;
 
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - options.timespan);
-    return await Promise.all(
-      follows.map((follow) => callAPI<Clip[]>(`https://api.twitch.tv/helix/clips?broadcaster_id=${follow.to_id}&started_at=${fromDate.toISOString()}`))
+    let clipsPerFollow = await Promise.all(
+      follows.map(
+        async (follow) =>
+          (
+            await callAPI<ClipResponse>(`https://api.twitch.tv/helix/clips?broadcaster_id=${follow.to_id}&started_at=${fromDate.toISOString()}`)
+          ).data
+      )
     );
+    return clipsPerFollow.filter((clips) => clips.length > 0);
   }
 
-  function sortClips(clipsPerChannel: Clip[][]): Clip[] {
-    if (options.sortOrder === 'viewsTotal') {
-      const clips = clipsPerChannel.reduce((acc: Clip[], curr) => {
-        acc = acc.concat(curr);
-        return acc;
-      }, []);
-
-      return clips.sort((a, b) => Number(b.view_count) - Number(a.view_count));
-    } else if (options.sortOrder === 'viewPerChannel') {
-      let clipsPerChannelSorted = clipsPerChannel.reduce((acc: Clip[][], curr) => {
-        if (curr.length > 0) {
-          acc.push(curr.sort((a, b) => Number(b.view_count) - Number(a.view_count)));
-        }
-        return acc;
-      }, []);
-
-      const clips = [];
-      while (clipsPerChannelSorted.length > 0) {
-        for (let i = 0; i < clipsPerChannelSorted.length; i++) {
-          clips.push(clipsPerChannelSorted[i].shift());
-        }
-        clipsPerChannelSorted = clipsPerChannelSorted.filter((value) => value.length !== 0);
+  async function sortClips(clipsPerChannel: Clip[][]): Promise<Clip[]> {
+    let clips: Clip[] = [];
+    switch (options.sortOrder) {
+      case 'viewsTotal': {
+        clips = clipsPerChannel.flat().sort((a, b) => b.view_count - a.view_count);
       }
-      return clips;
+      case 'viewPerChannel': {
+        let clipsPerChannelSorted: Clip[][] = [];
+        for (const clips of clipsPerChannel) {
+          clipsPerChannelSorted.push(clips.sort((a, b) => b.view_count - a.view_count));
+        }
+
+        while (clipsPerChannelSorted.length > 0) {
+          for (let i = 0; i < clipsPerChannelSorted.length; i++) {
+            clips.push(clipsPerChannelSorted[i].shift());
+          }
+          clipsPerChannelSorted = clipsPerChannelSorted.filter((value) => value.length !== 0);
+        }
+        return clips;
+      }
+      case 'popularity': {
+        const clipsPerChannelWithFollowCount: { clips: Clip[]; followCount: number }[] = await Promise.all(
+          clipsPerChannel.map(async (clips) => ({
+            clips: clips,
+            followCount: (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/users/follows?to_id=${clips[0].broadcaster_id}&first=1`)).total,
+          }))
+        );
+
+        const clipsWithPopularity: { clip: Clip; popularity: number; }[] = [];
+        for (const clipsAndFollows of clipsPerChannelWithFollowCount) {
+          for (const clip of clipsAndFollows.clips) {
+            clipsWithPopularity.push({ clip: clip, popularity: clip.view_count / clipsAndFollows.followCount });
+          }
+        }
+        clips = clipsWithPopularity.sort((a, b) => b.popularity - a.popularity).map(x => x.clip);
+      }
     }
+
+    return clips;
   }
 
   async function callAPI<T>(url: string): Promise<T> {
@@ -78,7 +101,7 @@
     });
     const json = await res.json();
     if (json.error) throw new Error(`${json.error}: ${json.message}`); // TODO: detect OAuth token is expired and refresh automatically
-    return json.data;
+    return json;
   }
 </script>
 
@@ -121,7 +144,7 @@
 
   .options {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template: 1fr / 1fr 1fr;
     text-align: left;
   }
 
@@ -130,6 +153,6 @@
   }
 
   .time input {
-    width: 50px;
+    width: 35px;
   }
 </style>

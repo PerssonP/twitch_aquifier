@@ -4,11 +4,11 @@
 
   import type { Clip } from './twitchAPITypes';
 
-  let videos: Clip[];
+  let videos: Clip[] = [];
 
 </script>
 
-{#if !videos}
+{#if !videos.length}
   <Setup bind:videos={videos} />
 {:else}
   <Player {videos} />

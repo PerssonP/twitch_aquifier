@@ -46,7 +46,6 @@
   const hopToVid = (index: number) => {
     const preloadingPlayer = player1Hidden ? player1 : player2;
     const clip = videos[index];
-    console.log(clip);
     loadingNextVid = true;
     videoIndex = index;
     preloadingPlayer.src = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
@@ -57,7 +56,6 @@
         const nextIndex = videoIndex + 1;
         if (nextIndex <= end) {
           const preloadClip = videos[nextIndex];
-          console.log(videoIndex, end);
           const newURL = `${preloadClip.thumbnail_url.slice(0, preloadClip.thumbnail_url.indexOf('-preview'))}.mp4`;
           if (player1Hidden) {
             player1.pause();
