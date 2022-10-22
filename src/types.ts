@@ -57,3 +57,9 @@ export type ErrorResponse = {
   status: number;
   message: string;
 };
+
+export type Options = {
+  username: string | null;
+  sort: 'viewsTotal' | 'viewPerChannel' | 'popularity';
+  time: number;
+};

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Clip } from '../twitchAPITypes';
+  import type { Clip } from '../types';
   export let videos: Clip[];
 
   let player1: HTMLVideoElement;
@@ -85,7 +85,7 @@
   <ul class="clipsList">
     {#each videos as video, i}
       <li>
-        <button disabled={loadingNextVid} class="{videoIndex === i ? 'current' : ''}" on:click={() => hopToVid(i)}>
+        <button disabled={loadingNextVid} class={videoIndex === i ? 'current' : ''} on:click={() => hopToVid(i)}>
           <p>{video.title}</p>
           <p class="broadcasterName">{video.broadcaster_name}</p>
         </button>
