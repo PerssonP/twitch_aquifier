@@ -63,3 +63,12 @@ export type Options = {
   sort: 'viewsTotal' | 'viewPerChannel' | 'popularity';
   time: number;
 };
+
+export type Video = {
+  source_url: string;
+  title: string;
+  broadcaster_name: string;
+  view_count: number;
+  vod_offset: number;
+  popularity?: number;
+}

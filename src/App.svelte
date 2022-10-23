@@ -2,9 +2,9 @@
   import Player from './lib/Player.svelte';
   import Setup from './lib/Setup.svelte';
   import { state } from './lib/StateStore';
-  import type { UserResponse, FollowResponse, ClipResponse, Clip, Options } from './types';
+  import type { Video, UserResponse, FollowResponse, ClipResponse, Clip, Options } from './types';
 
-  let videos: Clip[] = [];
+  let videos: Video[] | null = null;
   let error: string;
   let loading: boolean = false; // TODO: Show loading-state
 
@@ -27,7 +27,7 @@
         time,
       });
     } else {
-      videos = [];
+      videos = null;
       state.set(null);
       if (window.location.search) history.replaceState({}, '', window.location.origin);
     }
@@ -40,7 +40,7 @@
         const userResult = await callAPI<UserResponse>(`https://api.twitch.tv/helix/users?login=${options.username}`);
 
         if (userResult.data.length > 0) {
-          videos = await getClips(userResult.data[0].id, options);
+          videos = await getVideos(userResult.data[0].id, options);
         } else {
           error = `No user found with login ${options.username}`;
         }
@@ -51,8 +51,8 @@
     }
   });
 
-  async function getClips(userid: string, options: Options): Promise<Clip[]> {
-    let clips: Clip[] = [];
+  async function getVideos(userid: string, options: Options): Promise<Video[]> {
+    let videos: Video[] = [];
 
     const follows = (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/users/follows?from_id=${userid}`)).data;
     const fromDate = new Date();
@@ -70,10 +70,18 @@
       )
     ).filter((clips) => clips.length > 0);
 
-    // Sort clips
+    // Sort clips and form Video objects
     switch (options.sort) {
       case 'viewsTotal': {
-        clips = clipsPerFollow.flat().sort((a, b) => b.view_count - a.view_count);
+        const clips = clipsPerFollow.flat().sort((a, b) => b.view_count - a.view_count);
+        videos = clips.map((clip) => ({
+          source_url: `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`,
+          title: clip.title,
+          broadcaster_name: clip.broadcaster_name,
+          view_count: clip.view_count,
+          vod_offset: clip.vod_offset,
+        }));
+        break;
       }
       case 'viewPerChannel': {
         let clipsPerChannelSorted: Clip[][] = [];
@@ -83,11 +91,18 @@
 
         while (clipsPerChannelSorted.length > 0) {
           for (let i = 0; i < clipsPerChannelSorted.length; i++) {
-            clips.push(clipsPerChannelSorted[i].shift()!);
+            const clip = clipsPerChannelSorted[i].shift()!;
+            videos.push({
+              source_url: `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`,
+              title: clip.title,
+              broadcaster_name: clip.broadcaster_name,
+              view_count: clip.view_count,
+              vod_offset: clip.vod_offset,
+            });
           }
           clipsPerChannelSorted = clipsPerChannelSorted.filter((channel) => channel.length !== 0);
         }
-        return clips;
+        break;
       }
       case 'popularity': {
         const clipsPerChannelWithFollowCount: { clips: Clip[]; followCount: number }[] = await Promise.all(
@@ -97,17 +112,24 @@
           }))
         );
 
-        const clipsWithPopularity: { clip: Clip; popularity: number }[] = [];
         for (const clipsAndFollows of clipsPerChannelWithFollowCount) {
           for (const clip of clipsAndFollows.clips) {
-            clipsWithPopularity.push({ clip: clip, popularity: clip.view_count / clipsAndFollows.followCount });
+            videos.push({
+              source_url: `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`,
+              title: clip.title,
+              broadcaster_name: clip.broadcaster_name,
+              view_count: clip.view_count,
+              vod_offset: clip.vod_offset,
+              popularity: (clip.view_count / clipsAndFollows.followCount) * 100000,
+            });
           }
         }
-        clips = clipsWithPopularity.sort((a, b) => b.popularity - a.popularity).map((x) => x.clip);
+        videos.sort((a, b) => b.popularity! - a.popularity!);
+        break;
       }
     }
 
-    return clips;
+    return videos;
   }
 
   async function callAPI<T>(url: string): Promise<T> {
@@ -123,7 +145,7 @@
   }
 </script>
 
-{#if !videos.length}
+{#if !videos}
   <Setup {error} />
 {:else}
   <Player {videos} />

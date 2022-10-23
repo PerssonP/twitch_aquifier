@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Clip } from '../types';
-  export let videos: Clip[];
+  import type { Video } from '../types';
+  export let videos: Video[];
+
+  console.log(videos)
 
   let player1: HTMLVideoElement;
   let player2: HTMLVideoElement;
 
-  let player1Src = `${videos[0].thumbnail_url.slice(0, videos[0].thumbnail_url.indexOf('-preview'))}.mp4`;
-  let player2Src = `${videos[1].thumbnail_url.slice(0, videos[1].thumbnail_url.indexOf('-preview'))}.mp4`;
+  let player1Src = videos[0].source_url;
+  let player2Src = videos[1].source_url;
 
   let loadingNextVid = true;
   let videoIndex = 0;
@@ -24,19 +26,18 @@
   const nextVid = () => {
     const nextIndex = videoIndex + 2;
     if (nextIndex <= end) {
-      const clip = videos[nextIndex];
-      const newURL = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
+      const video = videos[nextIndex];
 
       player1Hidden = !player1Hidden;
       loadingNextVid = true;
       if (player1Hidden) {
         player1.pause();
         player2.play();
-        player1Src = newURL;
+        player1Src = video.source_url;
       } else {
         player2.pause();
         player1.play();
-        player2Src = newURL;
+        player2Src = video.source_url;
       }
 
       videoIndex++;
@@ -45,26 +46,25 @@
 
   const hopToVid = (index: number) => {
     const preloadingPlayer = player1Hidden ? player1 : player2;
-    const clip = videos[index];
+    const video = videos[index];
     loadingNextVid = true;
     videoIndex = index;
-    preloadingPlayer.src = `${clip.thumbnail_url.slice(0, clip.thumbnail_url.indexOf('-preview'))}.mp4`;
+    preloadingPlayer.src = video.source_url;
     preloadingPlayer.addEventListener(
       'canplay',
       () => {
         player1Hidden = !player1Hidden;
         const nextIndex = videoIndex + 1;
         if (nextIndex <= end) {
-          const preloadClip = videos[nextIndex];
-          const newURL = `${preloadClip.thumbnail_url.slice(0, preloadClip.thumbnail_url.indexOf('-preview'))}.mp4`;
+          const preloadVideo = videos[nextIndex];
           if (player1Hidden) {
             player1.pause();
             player2.play();
-            player1Src = newURL;
+            player1Src = preloadVideo.source_url;
           } else {
             player2.pause();
             player1.play();
-            player2Src = newURL;
+            player2Src = preloadVideo.source_url;
           }
         } else {
           if (player1Hidden) {
