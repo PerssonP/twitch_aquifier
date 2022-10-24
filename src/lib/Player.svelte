@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { has_prop } from 'svelte/internal';
   import type { Video } from '../types';
   export let videos: Video[];
 
-  console.log(videos)
+  console.log(videos);
 
   let player1: HTMLVideoElement;
   let player2: HTMLVideoElement;
@@ -99,6 +100,15 @@
     <!-- svelte-ignore a11y-media-has-caption -->
     <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
   </div>
+  <div class="videoDetails">
+    <p>Broadcaster: {videos[videoIndex].broadcaster_name}</p>
+    <p>Title: {videos[videoIndex].title}</p>
+    <p>Views: {videos[videoIndex].view_count}</p>
+    {#if Object.hasOwn(videos[videoIndex], 'popularity')}
+      <p>Popularity: {videos[videoIndex].popularity}</p>
+    {/if}
+    <a href={videos[videoIndex].vod_url}>Continue watching</a>
+  </div>
 
   <button class="nextVid" on:click={nextVid} disabled={loadingNextVid || videoIndex >= end}>Next</button>
 </div>
@@ -109,13 +119,17 @@
     width: 100%;
     height: 100%;
     grid-template-columns: 10% auto 10%;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      'clipsList videoPlayer nextVidBtn'
+      'clipsList videoDetails videoDetails';
   }
 
   .clipsList {
+    grid-area: clipsList;
     list-style-type: none;
-    margin-block: 0;
-    margin-inline: 0;
-    padding-inline: 0;
+    margin: 0;
+    padding: 0;
     overflow-y: scroll;
     overflow-x: hidden;
   }
@@ -140,6 +154,7 @@
   }
 
   .videoPlayer {
+    grid-area: videoPlayer;
     place-self: center;
   }
 
@@ -148,7 +163,19 @@
     max-width: 100%;
   }
 
+  .videoDetails {
+    display: flex;
+    grid-area: videoDetails;
+    background-color: #1a1a1a;
+    justify-content: space-around;
+  }
+
+  .videoDetails p {
+    margin: 0
+  }
+
   .nextVid {
+    grid-area: nextVidBtn;
     justify-self: end;
   }
 

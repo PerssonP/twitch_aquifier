@@ -8,9 +8,9 @@
   let error: string;
   let loading: boolean = false; // TODO: Show loading-state
 
-  window.addEventListener('popstate', handleStateChange);
-
   if (window.location.search) handleStateChange();
+  
+  window.addEventListener('popstate', handleStateChange);
 
   function handleStateChange() {
     const searchParams = new URLSearchParams(window.location.search);
@@ -79,7 +79,7 @@
           title: clip.title,
           broadcaster_name: clip.broadcaster_name,
           view_count: clip.view_count,
-          vod_offset: clip.vod_offset,
+          vod_url: `https://www.twitch.tv/videos/${clip.video_id}?t=${clip.vod_offset}s`,
         }));
         break;
       }
@@ -97,7 +97,7 @@
               title: clip.title,
               broadcaster_name: clip.broadcaster_name,
               view_count: clip.view_count,
-              vod_offset: clip.vod_offset,
+              vod_url: `https://www.twitch.tv/videos/${clip.video_id}?t=${clip.vod_offset}s`
             });
           }
           clipsPerChannelSorted = clipsPerChannelSorted.filter((channel) => channel.length !== 0);
@@ -119,7 +119,7 @@
               title: clip.title,
               broadcaster_name: clip.broadcaster_name,
               view_count: clip.view_count,
-              vod_offset: clip.vod_offset,
+              vod_url: `https://www.twitch.tv/videos/${clip.video_id}?t=${clip.vod_offset}s`,
               popularity: (clip.view_count / clipsAndFollows.followCount) * 100000,
             });
           }
@@ -146,7 +146,7 @@
 </script>
 
 {#if !videos}
-  <Setup {error} />
+  <Setup {error} {loading} />
 {:else}
   <Player {videos} />
 {/if}

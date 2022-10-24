@@ -69,6 +69,6 @@ export type Video = {
   title: string;
   broadcaster_name: string;
   view_count: number;
-  vod_offset: number;
+  vod_url: string;
   popularity?: number;
 }

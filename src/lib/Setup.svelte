@@ -3,6 +3,7 @@
   import type { Options } from '../types';
 
   export let error: string;
+  export let loading: boolean;
 
   let options: Options = {
     username: null,
@@ -27,7 +28,7 @@
   <p>Enter twitch login:</p>
   <div>
     <input bind:value={options.username} />
-    <button type="submit">Submit</button>
+    <button type="submit" disabled={loading}>Submit</button>
   </div>
   <p style="color: rgb(220 38 38);">{error ?? ''}</p>
   <div class="options">
