@@ -7,6 +7,7 @@
   let videos: Video[] | null = null;
   let error: string;
   let loading: boolean = false; // TODO: Show loading-state
+  let apiToken: string | null = null;
 
   if (window.location.search) handleStateChange();
   
@@ -133,15 +134,22 @@
   }
 
   async function callAPI<T>(url: string): Promise<T> {
+    if (apiToken == null) await getToken();
+
     const res = await fetch(url, {
       headers: {
         'Client-ID': import.meta.env.VITE_TESTING_API_CLIENT_ID,
-        Authorization: `Bearer ${import.meta.env.VITE_TESTING_API_TOKEN}`,
+        Authorization: `Bearer ${apiToken}`,
       },
     });
     const json = await res.json();
     if (json.error) throw new Error(`${json.error}: ${json.message}`); // TODO: detect OAuth token is expired and refresh automatically
     return json;
+  }
+
+  async function getToken() {
+    const res = await fetch('https://api.peter.biz/twitch/token');
+    apiToken = await res.text();
   }
 </script>
 
