@@ -10,7 +10,7 @@
   let apiToken: string | null = null;
 
   if (window.location.search) handleStateChange();
-  
+
   window.addEventListener('popstate', handleStateChange);
 
   function handleStateChange() {
@@ -98,7 +98,7 @@
               title: clip.title,
               broadcaster_name: clip.broadcaster_name,
               view_count: clip.view_count,
-              vod_url: `https://www.twitch.tv/videos/${clip.video_id}?t=${clip.vod_offset}s`
+              vod_url: `https://www.twitch.tv/videos/${clip.video_id}?t=${clip.vod_offset}s`,
             });
           }
           clipsPerChannelSorted = clipsPerChannelSorted.filter((channel) => channel.length !== 0);
@@ -143,7 +143,7 @@
       },
     });
     const json = await res.json();
-    if (json.error) throw new Error(`${json.error}: ${json.message}`); // TODO: detect OAuth token is expired and refresh automatically
+    if (json.error) throw new Error(`${json.error}: ${json.message}`);
     return json;
   }
 

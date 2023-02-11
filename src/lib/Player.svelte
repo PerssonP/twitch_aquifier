@@ -9,9 +9,6 @@
   let player1: HTMLVideoElement;
   let player2: HTMLVideoElement;
 
-  let player1Src = videos[0].source_url;
-  let player2Src = videos[1].source_url;
-
   let loadingNextVid = true;
   let videoIndex = 0;
   let end = videos.length - 1;
@@ -19,66 +16,54 @@
   let player1Hidden = false;
 
   onMount(async () => {
-    player1.play();
-    player1.oncanplay = (_) => (loadingNextVid = false);
-    player2.oncanplay = (_) => (loadingNextVid = false);
+    player1.addEventListener('canplay', () => player1.play(), { once: true });
   });
 
   const nextVid = () => {
-    const nextIndex = videoIndex + 2;
-    if (nextIndex <= end) {
-      const video = videos[nextIndex];
+    const preloadSrc = end >= videoIndex + 2 ? videos[videoIndex + 2].source_url : null;
+    loadingNextVid = true;
+    togglePlayer(preloadSrc);
 
-      player1Hidden = !player1Hidden;
-      loadingNextVid = true;
-      if (player1Hidden) {
-        player1.pause();
-        player2.play();
-        player1Src = video.source_url;
-      } else {
-        player2.pause();
-        player1.play();
-        player2Src = video.source_url;
-      }
-
-      videoIndex++;
-    }
+    videoIndex++;
   };
 
-  const hopToVid = (index: number) => {
+  const hopToVid = (jumpIndex: number) => {
+    if (jumpIndex == videoIndex) return;
     const preloadingPlayer = player1Hidden ? player1 : player2;
-    const video = videos[index];
+    const video = videos[jumpIndex];
     loadingNextVid = true;
-    videoIndex = index;
+    videoIndex = jumpIndex;
     preloadingPlayer.src = video.source_url;
     preloadingPlayer.addEventListener(
-      'canplay',
+      'loadeddata',
       () => {
-        player1Hidden = !player1Hidden;
-        const nextIndex = videoIndex + 1;
-        if (nextIndex <= end) {
-          const preloadVideo = videos[nextIndex];
-          if (player1Hidden) {
-            player1.pause();
-            player2.play();
-            player1Src = preloadVideo.source_url;
-          } else {
-            player2.pause();
-            player1.play();
-            player2Src = preloadVideo.source_url;
-          }
-        } else {
-          if (player1Hidden) {
-            player1.pause();
-            player2.play();
-          } else {
-            player2.pause();
-            player1.play();
-          }
-        }
+        const nextURL = end > jumpIndex ? videos[jumpIndex + 1].source_url : null;
+        togglePlayer(nextURL);
       },
       { once: true }
     );
+  };
+
+  const togglePlayer = (nextURL: string | null) => {
+    player1Hidden = !player1Hidden;
+    const currentPlayer = player1Hidden ? player2 : player1;
+    const preloadingPlayer = player1Hidden ? player1 : player2;
+
+    preloadingPlayer.pause();
+    currentPlayer.play();
+
+    if (nextURL !== null) {
+      preloadingPlayer.addEventListener(
+        'loadeddata',
+        () => {
+          loadingNextVid = false;
+        },
+        { once: true }
+      );
+      preloadingPlayer.src = nextURL;
+    } else {
+      loadingNextVid = false;
+    }
   };
 </script>
 
@@ -96,9 +81,9 @@
 
   <div class="videoPlayer">
     <!-- svelte-ignore a11y-media-has-caption -->
-    <video bind:this={player1} class:hidden={player1Hidden} src={player1Src} preload="auto" controls id="player1" />
+    <video bind:this={player1} class:hidden={player1Hidden} src={videos[0].source_url} preload="auto" controls id="player1" />
     <!-- svelte-ignore a11y-media-has-caption -->
-    <video bind:this={player2} class:hidden={!player1Hidden} src={player2Src} preload="auto" controls id="player2" />
+    <video bind:this={player2} class:hidden={!player1Hidden} src={videos[1].source_url} preload="auto" controls id="player2" />
   </div>
   <div class="videoDetails">
     <p>Broadcaster: {videos[videoIndex].broadcaster_name}</p>
@@ -171,7 +156,7 @@
   }
 
   .videoDetails p {
-    margin: 0
+    margin: 0;
   }
 
   .nextVid {
