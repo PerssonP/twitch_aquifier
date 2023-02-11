@@ -9,7 +9,7 @@
   let player1: HTMLVideoElement;
   let player2: HTMLVideoElement;
 
-  let loadingNextVid = true;
+  let loadingNextVid = false;
   let videoIndex = 0;
   let end = videos.length - 1;
 
