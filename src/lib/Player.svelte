@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { has_prop } from 'svelte/internal';
   import type { Video } from '../types';
   export let videos: Video[];
 
@@ -32,13 +31,13 @@
     const preloadingPlayer = player1Hidden ? player1 : player2;
     const video = videos[jumpIndex];
     loadingNextVid = true;
-    videoIndex = jumpIndex;
     preloadingPlayer.src = video.source_url;
     preloadingPlayer.addEventListener(
       'loadeddata',
       () => {
         const nextURL = end > jumpIndex ? videos[jumpIndex + 1].source_url : null;
         togglePlayer(nextURL);
+        videoIndex = jumpIndex;
       },
       { once: true }
     );
