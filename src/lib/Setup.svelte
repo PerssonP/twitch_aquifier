@@ -7,26 +7,20 @@
   export let getToken: (state: string) => void;
 
   let options: Options = {
-    username: null, // TODO: New API-endpoints mean you can't read follows from other users than yourself. Get username from OAuth-redirect instead
     sort: 'viewsTotal',
     time: 1,
   };
 
-  async function handleSubmit() {
-    if (!options.username) {
-      error = 'Please enter your username on Twitch';
-      return;
-    }
-
-    getToken(`?username=${options.username}&sort=${options.sort}&time=${options.time}`);
+  function handleSubmit() {
+    loading = true;
+    getToken(`?sort=${options.sort}&time=${options.time}`)
   }
 </script>
 
 <form class="userForm" on:submit|preventDefault={handleSubmit}>
-  <p>Enter twitch login:</p>
+  <p>Click to authenticate with Twitch:</p>
   <div>
-    <input bind:value={options.username} />
-    <button type="submit" disabled={loading}>Submit</button>
+    <button type="submit" disabled={loading}>Fetch clips</button>
   </div>
   <p style="color: rgb(220 38 38);">{error ?? ''}</p>
   <div class="options">

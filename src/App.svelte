@@ -14,7 +14,6 @@
   if (window.location.hash) {
     // Handle access token return
     if (window.location.hash.startsWith('#access_token=')) {
-      loading = true;
       const response: { access_token: string; scope: string; state: string; token_type: string } = Object.fromEntries(
         window.location.hash
           .substring(1)
@@ -32,15 +31,13 @@
       history.replaceState(newState, '', url);
 
       // Update state
-      const username = searchParams.get('username');
       const sort = ['viewsTotal', 'viewPerChannel', 'popularity'].some((value) => value === searchParams.get('sort'))
         ? (searchParams.get('sort') as 'viewsTotal' | 'viewPerChannel' | 'popularity')
         : null;
       const time = Number(searchParams.get('time'));
       
-      if (username && sort && time) {
+      if (sort && time) {
         state.set({
-          username,
           sort,
           time
         });
@@ -53,15 +50,15 @@
   }
 
   state.subscribe(async (options) => {
-    if (options?.username) {
+    if (options) {
       loading = true;
       try {
-        const userResult = await callAPI<UserResponse>(`https://api.twitch.tv/helix/users?login=${options.username}`);
+        const userResult = await callAPI<UserResponse>('https://api.twitch.tv/helix/users');
 
         if (userResult.data.length > 0) {
           videos = await getVideos(userResult.data[0].id, options);
         } else {
-          error = `No user found with login ${options.username}`;
+          error = 'No user returned';
         }
       } catch (error) {
         console.log(error);

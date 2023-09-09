@@ -69,7 +69,6 @@ export type ErrorResponse = {
 };
 
 export type Options = {
-  username: string | null;
   sort: 'viewsTotal' | 'viewPerChannel' | 'popularity';
   time: number;
 };
