@@ -14,19 +14,29 @@ export type UserResponse = {
 };
 
 export type FollowResponse = {
-  total: number;
   data: {
-    from_id: string;
-    from_login: string;
-    from_name: string;
-    to_id: string;
-    to_login: string;
-    to_name: string;
+    broadcaster_id: string;
+    broadcaster_login: string;
+    broadcaster_name: string;
     followed_at: string;
   }[];
   pagination: {
     cursor: string;
   };
+  total: number;
+};
+
+export type ChannelFollowResponse = {
+  data: {
+    user_id: string;
+    user_login: string;
+    user_name: string;
+    followed_at: string;
+  }[];
+  pagination: {
+    cursor: string;
+  };
+  total: number;
 };
 
 export type Clip = {

@@ -4,9 +4,10 @@
 
   export let error: string;
   export let loading: boolean;
+  export let getToken: (state: string) => void;
 
   let options: Options = {
-    username: null,
+    username: null, // TODO: New API-endpoints mean you can't read follows from other users than yourself. Get username from OAuth-redirect instead
     sort: 'viewsTotal',
     time: 1,
   };
@@ -17,10 +18,7 @@
       return;
     }
 
-    const url = new URL(window.location.toString());
-    url.search = `username=${options.username}&sort=${options.sort}&time=${options.time}`;
-    history.pushState(options, '', url);
-    state.set(options);
+    getToken(`?username=${options.username}&sort=${options.sort}&time=${options.time}`);
   }
 </script>
 

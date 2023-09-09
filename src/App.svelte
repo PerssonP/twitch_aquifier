@@ -2,35 +2,53 @@
   import Player from './lib/Player.svelte';
   import Setup from './lib/Setup.svelte';
   import { state } from './lib/StateStore';
-  import type { Video, UserResponse, FollowResponse, ClipResponse, Clip, Options } from './types';
+  import type { Video, UserResponse, FollowResponse, ClipResponse, Clip, Options, ChannelFollowResponse } from './types';
 
   let videos: Video[] | null = null;
   let error: string;
   let loading: boolean = false; // TODO: Show loading-state
-  let apiToken: string | null = null;
+  let userToken: string | null = null;
 
-  if (window.location.search) handleStateChange();
+  if (window.location.search) getToken(window.location.search);
 
-  window.addEventListener('popstate', handleStateChange);
+  if (window.location.hash) {
+    // Handle access token return
+    if (window.location.hash.startsWith('#access_token=')) {
+      loading = true;
+      const response: { access_token: string; scope: string; state: string; token_type: string } = Object.fromEntries(
+        window.location.hash
+          .substring(1)
+          .split('&')
+          .map((x) => x.split('='))
+      );
+      const newState = decodeURIComponent(response.state);
+      const searchParams = new URLSearchParams(newState);
 
-  function handleStateChange() {
-    const searchParams = new URLSearchParams(window.location.search);
-    const username = searchParams.get('username');
-    const sort = ['viewsTotal', 'viewPerChannel', 'popularity'].some((value) => value === searchParams.get('sort'))
-      ? (searchParams.get('sort') as 'viewsTotal' | 'viewPerChannel' | 'popularity')
-      : null;
-    const time = Number(searchParams.get('time'));
+      userToken = response.access_token;
 
-    if (username && sort && time) {
-      state.set({
-        username,
-        sort,
-        time,
-      });
-    } else {
-      videos = null;
-      state.set(null);
-      if (window.location.search) history.replaceState({}, '', window.location.origin);
+      // Update URL
+      const url = new URL(window.location.origin);
+      url.search = newState;
+      history.replaceState(newState, '', url);
+
+      // Update state
+      const username = searchParams.get('username');
+      const sort = ['viewsTotal', 'viewPerChannel', 'popularity'].some((value) => value === searchParams.get('sort'))
+        ? (searchParams.get('sort') as 'viewsTotal' | 'viewPerChannel' | 'popularity')
+        : null;
+      const time = Number(searchParams.get('time'));
+      
+      if (username && sort && time) {
+        state.set({
+          username,
+          sort,
+          time
+        });
+      } else {
+        videos = null;
+        state.set(null);
+        if (window.location.search) history.replaceState({}, '', window.location.origin);
+      }
     }
   }
 
@@ -55,7 +73,7 @@
   async function getVideos(userid: string, options: Options): Promise<Video[]> {
     let videos: Video[] = [];
 
-    const follows = (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/users/follows?from_id=${userid}`)).data;
+    const follows = (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/channels/followed?user_id=${userid}`)).data;
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - options.time);
 
@@ -65,7 +83,7 @@
         follows.map(
           async (follow) =>
             (
-              await callAPI<ClipResponse>(`https://api.twitch.tv/helix/clips?broadcaster_id=${follow.to_id}&started_at=${fromDate.toISOString()}`)
+              await callAPI<ClipResponse>(`https://api.twitch.tv/helix/clips?broadcaster_id=${follow.broadcaster_id}&started_at=${fromDate.toISOString()}`)
             ).data
         )
       )
@@ -109,7 +127,9 @@
         const clipsPerChannelWithFollowCount: { clips: Clip[]; followCount: number }[] = await Promise.all(
           clipsPerFollow.map(async (clips) => ({
             clips: clips,
-            followCount: (await callAPI<FollowResponse>(`https://api.twitch.tv/helix/users/follows?to_id=${clips[0].broadcaster_id}&first=1`)).total,
+            followCount: (
+              await callAPI<ChannelFollowResponse>(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${clips[0].broadcaster_id}`)
+            ).total,
           }))
         );
 
@@ -134,12 +154,12 @@
   }
 
   async function callAPI<T>(url: string): Promise<T> {
-    if (apiToken == null) await getToken();
+    if (userToken == null) throw new Error('userToken is null when calling TwitchAPI');
 
     const res = await fetch(url, {
       headers: {
-        'Client-ID': import.meta.env.VITE_TESTING_API_CLIENT_ID,
-        Authorization: `Bearer ${apiToken}`,
+        'Client-ID': import.meta.env.VITE_API_CLIENT_ID,
+        Authorization: `Bearer ${userToken}`,
       },
     });
     const json = await res.json();
@@ -147,14 +167,16 @@
     return json;
   }
 
-  async function getToken() {
-    const res = await fetch('https://api.peter.biz/twitch/token');
-    apiToken = await res.text();
+  function getToken(state: string) {
+    const currentState = encodeURIComponent(state);
+    window.location.replace(
+      `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_API_CLIENT_ID}&redirect_uri=${window.location.origin}&scope=user%3Aread%3Afollows&state=${currentState}`
+    );
   }
 </script>
 
 {#if !videos}
-  <Setup {error} {loading} />
+  <Setup {error} {loading} {getToken} />
 {:else}
   <Player {videos} />
 {/if}
